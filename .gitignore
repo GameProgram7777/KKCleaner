@@ -1,0 +1,26 @@
+# 開發／測試用大型資料（不進版控）
+legacy/
+test_data/
+
+# Python 快取
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 打包產物
+*.exe
+build/
+dist/
+*.spec
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+
+# 壓縮檔
+*.zip
+*.7z
+*.tar.gz
+
+# 注意：Mono.Cecil.dll 為執行必需，必須保留追蹤，故不排除 *.dll
