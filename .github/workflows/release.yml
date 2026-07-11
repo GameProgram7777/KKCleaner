@@ -36,8 +36,8 @@ jobs:
       - name: Install dependencies
         run: pip install pyinstaller tkinterdnd2 chardet pythonnet
 
-      - name: Build exe (bundles Mono.Cecil.dll)
-        run: pyinstaller --noconfirm --onefile --windowed --name KKCleaner --add-data "Mono.Cecil.dll;." --hidden-import clr KKCleaner.py
+      - name: Build exe (bundles Mono.Cecil.dll + tkdnd)
+        run: pyinstaller --noconfirm --onefile --windowed --name KKCleaner --add-data "Mono.Cecil.dll;." --collect-all tkinterdnd2 --hidden-import clr KKCleaner.py
 
       - name: Upload build artifact (validation runs)
         uses: actions/upload-artifact@v4
