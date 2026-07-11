@@ -1,10 +1,22 @@
 name: Release
 
-# 推送 v* tag 時自動 build 並發佈 release；也可在 Actions 分頁手動觸發驗證建置
+# 兩種發佈方式：
+#   1. 命令列推 v* tag：  git tag v1.1 && git push origin v1.1
+#   2. Actions 分頁手動：Run workflow → 在「tag」欄填 v1.1
+# tag 欄留空時只建置＋上傳 artifact 驗證，不會發 release。
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: '要發佈的版本 tag（例如 v1.1）。留空＝只建置驗證、不發 release。'
+        required: false
+        default: ''
+      prerelease:
+        description: '標記為 pre-release'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -25,14 +37,18 @@ jobs:
       - name: Build exe (bundles Mono.Cecil.dll)
         run: pyinstaller --noconfirm --onefile --windowed --name KKCleaner --add-data "Mono.Cecil.dll;." --hidden-import clr KKCleaner.py
 
-      - name: Upload build artifact (for validation runs)
+      - name: Upload build artifact (validation runs)
         uses: actions/upload-artifact@v4
         with:
           name: KKCleaner-exe
           path: dist/KKCleaner.exe
 
-      - name: Attach to release (tag pushes only)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: KKCleaner ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           files: dist/KKCleaner.exe
