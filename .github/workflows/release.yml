@@ -1,0 +1,38 @@
+name: Release
+
+# 推送 v* tag 時自動 build 並發佈 release；也可在 Actions 分頁手動觸發驗證建置
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyinstaller tkinterdnd2 chardet pythonnet
+
+      - name: Build exe (bundles Mono.Cecil.dll)
+        run: pyinstaller --noconfirm --onefile --windowed --name KKCleaner --add-data "Mono.Cecil.dll;." --hidden-import clr KKCleaner.py
+
+      - name: Upload build artifact (for validation runs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: KKCleaner-exe
+          path: dist/KKCleaner.exe
+
+      - name: Attach to release (tag pushes only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/KKCleaner.exe
