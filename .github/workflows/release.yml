@@ -26,6 +26,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 需要完整歷史與 tag 才能產生 changelog
 
       - uses: actions/setup-python@v5
         with:
@@ -43,12 +45,31 @@ jobs:
           name: KKCleaner-exe
           path: dist/KKCleaner.exe
 
+      - name: Generate changelog from commits
+        if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.tag != ''
+        id: changelog
+        shell: bash
+        run: |
+          TARGET="${{ github.event.inputs.tag || github.ref_name }}"
+          PREV=$(git tag --sort=-creatordate | grep -vx "$TARGET" | head -1)
+          {
+            if [ -n "$PREV" ]; then
+              echo "## What's Changed (since $PREV)"; echo
+              git log --no-merges --pretty='- %s' "$PREV..HEAD"
+            else
+              echo "## What's Changed"; echo
+              git log --no-merges --pretty='- %s'
+            fi
+          } > "$RUNNER_TEMP/notes.md"
+          echo "path=$RUNNER_TEMP/notes.md" >> "$GITHUB_OUTPUT"
+
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: KKCleaner ${{ github.event.inputs.tag || github.ref_name }}
+          body_path: ${{ steps.changelog.outputs.path }}
           generate_release_notes: true
           prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           files: dist/KKCleaner.exe
